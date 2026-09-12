@@ -2,8 +2,11 @@
  * のりばナビ — application logic.
  * Reads window.APP_DATA (see data.js) and renders:
  *   - a home screen (search + destination list + favorites)
- *   - a detail screen (nav summary, platform, next departures, map, timetable)
- *   - a full-timetable modal
+ *   - a detail screen (nav summary, platform, next departures, full timetable modal)
+ *   - a persistent map (always visible; shows the origin/selection on the home screen,
+ *     and the platform + route line on the detail screen)
+ *   - an origin ("start point") picker: current location (GPS), tap-to-drop-pin on the
+ *     map, or free-text place search (OpenStreetMap Nominatim)
  * i18n: ja / en / zh / ko, switched live with no page reload.
  * Favorites persist via localStorage (this is a real hosted page, not a sandboxed
  * artifact preview, so localStorage is durable here).
@@ -25,18 +28,16 @@
       searchPlaceholder: '行き先を検索',
       favSectionTitle: 'お気に入り',
       favEmpty: 'お気に入りはまだありません。行き先の☆をタップして追加できます。',
-      allDestTitle: '品川駅高輪口 発',
+      allDestTitleTemplate: '{origin} 発',
       backBtn: '← 戻る',
       gpsBtn: '現在地',
       gpsLocating: '現在地を取得中…',
-      gpsFoundNear: '現在地は品川駅高輪口の近くです（半径1km以内）',
-      gpsFoundFar: '現在地は対応エリア外です。現在は品川駅高輪口のみ対応しています。',
       gpsDenied: '位置情報の利用が許可されませんでした。',
       gpsUnsupported: 'このブラウザは位置情報に対応していません。',
       routeLabel: '系統',
       platformLabel: 'のりば',
       travelMinTemplate: '約{min}分',
-      navTemplate: '品川駅高輪口 → {dest}',
+      navTemplate: '{origin} → {dest}',
       nextDepTitle: '次の便',
       etaTemplate: 'あと{min}分',
       etaHourMinTemplate: 'あと{h}時間{min}分',
@@ -51,8 +52,26 @@
       ttCloseBtn: '閉じる',
       ttCountTemplate: '1日{n}本',
       mapNote: '地図データ: © OpenStreetMap contributors',
-      attribution: 'バスデータ: 東京都交通局（公共交通オープンデータ協議会 経由）／ CC BY 4.0',
-      platformNoteHeadsign: '※ 同じのりばでも行き先が異なる便が発着する場合があります。系統番号だけでなく行き先表示を必ず確認してください。'
+      attribution: 'バスデータ: 東京都交通局（公共交通オープンデータ協議会 経由）／ CC BY 4.0 ／ 地点検索: © OpenStreetMap Nominatim',
+      platformNoteHeadsign: '※ 同じのりばでも行き先が異なる便が発着する場合があります。系統番号だけでなく行き先表示を必ず確認してください。',
+      originCurrentTemplate: '出発地: {name}',
+      changeOriginBtn: '変更',
+      originModalTitle: '出発地を選ぶ',
+      originTabGps: '現在地',
+      originTabMap: '地図でタップ',
+      originTabText: 'テキスト検索',
+      originGpsBtn: '📍 現在地を取得して設定',
+      originMapHint: 'ボタンを押すと地図をタップして出発地点を選べます。',
+      originMapToggleBtn: '地図でタップして選ぶ',
+      originMapToggleBtnActive: 'タップ選択モード中…（地図をタップ）',
+      originSearchPlaceholder: '駅名・地名を入力（例：五反田駅）',
+      originSearchNoResults: '該当する場所が見つかりませんでした',
+      originSearchError: '検索中にエラーが発生しました。時間をおいて再度お試しください。',
+      originFoundNearTemplate: '選択した地点は「{name}」の対応エリア内です。',
+      originOutOfAreaTemplate: 'この地点のバス乗り場データはまだありません。現在は「{name}」のデータのみ対応しています。',
+      originCloseBtn: '閉じる',
+      selectedPointLabel: '選択した地点',
+      yourLocationLabel: '現在地'
     },
     en: {
       appTitle: 'Noriba Navi',
@@ -60,18 +79,16 @@
       searchPlaceholder: 'Search destinations',
       favSectionTitle: 'Favorites',
       favEmpty: 'No favorites yet. Tap the ☆ on a destination to add one.',
-      allDestTitle: 'From Shinagawa Sta. (Takanawa Exit)',
+      allDestTitleTemplate: 'From {origin}',
       backBtn: '← Back',
       gpsBtn: 'My location',
       gpsLocating: 'Locating…',
-      gpsFoundNear: 'You are near Shinagawa Sta. (Takanawa Exit), within 1km.',
-      gpsFoundFar: 'You are outside the covered area. Only Shinagawa Sta. (Takanawa Exit) is supported right now.',
       gpsDenied: 'Location access was not granted.',
       gpsUnsupported: 'This browser does not support geolocation.',
       routeLabel: 'Route',
       platformLabel: 'Platform',
       travelMinTemplate: '~{min} min',
-      navTemplate: 'Shinagawa Sta. (Takanawa Exit) → {dest}',
+      navTemplate: '{origin} → {dest}',
       nextDepTitle: 'Next departures',
       etaTemplate: 'in {min} min',
       etaHourMinTemplate: 'in {h}h {min}m',
@@ -86,8 +103,26 @@
       ttCloseBtn: 'Close',
       ttCountTemplate: '{n} trips/day',
       mapNote: 'Map data: © OpenStreetMap contributors',
-      attribution: 'Bus data: Tokyo Metropolitan Bureau of Transportation (via ODPT) / CC BY 4.0',
-      platformNoteHeadsign: 'Note: the same platform can serve buses with different destinations. Always check the destination sign, not just the route number.'
+      attribution: 'Bus data: Tokyo Metropolitan Bureau of Transportation (via ODPT) / CC BY 4.0 / Place search: © OpenStreetMap Nominatim',
+      platformNoteHeadsign: 'Note: the same platform can serve buses with different destinations. Always check the destination sign, not just the route number.',
+      originCurrentTemplate: 'From: {name}',
+      changeOriginBtn: 'Change',
+      originModalTitle: 'Choose your start point',
+      originTabGps: 'My location',
+      originTabMap: 'Tap on map',
+      originTabText: 'Search by name',
+      originGpsBtn: '📍 Use my current location',
+      originMapHint: 'Press the button, then tap the map to choose a start point.',
+      originMapToggleBtn: 'Tap the map to choose',
+      originMapToggleBtnActive: 'Tap mode on… (tap the map)',
+      originSearchPlaceholder: 'Type a station or place name (e.g. Gotanda Sta.)',
+      originSearchNoResults: 'No matching places found',
+      originSearchError: 'Something went wrong while searching. Please try again shortly.',
+      originFoundNearTemplate: 'That point is within the "{name}" coverage area.',
+      originOutOfAreaTemplate: 'There is no bus platform data for that area yet. Currently only "{name}" is supported.',
+      originCloseBtn: 'Close',
+      selectedPointLabel: 'Selected point',
+      yourLocationLabel: 'Your location'
     },
     zh: {
       appTitle: '乘车站台导航',
@@ -95,18 +130,16 @@
       searchPlaceholder: '搜索目的地',
       favSectionTitle: '收藏',
       favEmpty: '暂无收藏。点击目的地旁的☆即可添加。',
-      allDestTitle: '从 品川站(高轮口) 出发',
+      allDestTitleTemplate: '从 {origin} 出发',
       backBtn: '← 返回',
       gpsBtn: '当前位置',
       gpsLocating: '正在定位…',
-      gpsFoundNear: '您当前位置靠近品川站(高轮口)，1公里以内。',
-      gpsFoundFar: '您当前位置不在覆盖范围内。目前仅支持品川站(高轮口)。',
       gpsDenied: '未授权使用位置信息。',
       gpsUnsupported: '此浏览器不支持定位功能。',
       routeLabel: '系统(路线)',
       platformLabel: '乘车站台',
       travelMinTemplate: '约{min}分钟',
-      navTemplate: '品川站(高轮口) → {dest}',
+      navTemplate: '{origin} → {dest}',
       nextDepTitle: '下一班',
       etaTemplate: '{min}分钟后',
       etaHourMinTemplate: '{h}小时{min}分钟后',
@@ -121,8 +154,26 @@
       ttCloseBtn: '关闭',
       ttCountTemplate: '每日{n}班',
       mapNote: '地图数据: © OpenStreetMap contributors',
-      attribution: '巴士数据: 东京都交通局（经由公共交通开放数据协议会）／ CC BY 4.0',
-      platformNoteHeadsign: '※ 同一站台也可能发往不同目的地的班次。请务必确认车头目的地显示，而非仅凭路线号码。'
+      attribution: '巴士数据: 东京都交通局（经由公共交通开放数据协议会）／ CC BY 4.0 ／ 地点搜索: © OpenStreetMap Nominatim',
+      platformNoteHeadsign: '※ 同一站台也可能发往不同目的地的班次。请务必确认车头目的地显示，而非仅凭路线号码。',
+      originCurrentTemplate: '出发地: {name}',
+      changeOriginBtn: '更改',
+      originModalTitle: '选择出发地点',
+      originTabGps: '当前位置',
+      originTabMap: '地图点选',
+      originTabText: '文字搜索',
+      originGpsBtn: '📍 使用当前位置',
+      originMapHint: '点击按钮后，在地图上点选出发地点。',
+      originMapToggleBtn: '在地图上点选',
+      originMapToggleBtnActive: '点选模式中…（请点击地图）',
+      originSearchPlaceholder: '输入车站或地名（如：五反田站）',
+      originSearchNoResults: '未找到匹配的地点',
+      originSearchError: '搜索时发生错误，请稍后再试。',
+      originFoundNearTemplate: '所选地点在「{name}」的覆盖范围内。',
+      originOutOfAreaTemplate: '该地区暂无巴士站台数据。目前仅支持「{name}」。',
+      originCloseBtn: '关闭',
+      selectedPointLabel: '所选地点',
+      yourLocationLabel: '当前位置'
     },
     ko: {
       appTitle: '노리바 내비',
@@ -130,18 +181,16 @@
       searchPlaceholder: '목적지 검색',
       favSectionTitle: '즐겨찾기',
       favEmpty: '즐겨찾기가 없습니다. 목적지의 ☆를 눌러 추가하세요.',
-      allDestTitle: '시나가와역(다카나와 출구) 출발',
+      allDestTitleTemplate: '{origin} 출발',
       backBtn: '← 뒤로',
       gpsBtn: '현재 위치',
       gpsLocating: '위치 확인 중…',
-      gpsFoundNear: '현재 위치가 시나가와역(다카나와 출구) 반경 1km 이내입니다.',
-      gpsFoundFar: '현재 위치는 지원 지역 밖입니다. 현재는 시나가와역(다카나와 출구)만 지원합니다.',
       gpsDenied: '위치 정보 사용이 허용되지 않았습니다.',
       gpsUnsupported: '이 브라우저는 위치 정보를 지원하지 않습니다.',
       routeLabel: '노선',
       platformLabel: '승차장',
       travelMinTemplate: '약 {min}분',
-      navTemplate: '시나가와역(다카나와 출구) → {dest}',
+      navTemplate: '{origin} → {dest}',
       nextDepTitle: '다음 출발',
       etaTemplate: '{min}분 후',
       etaHourMinTemplate: '{h}시간 {min}분 후',
@@ -156,8 +205,26 @@
       ttCloseBtn: '닫기',
       ttCountTemplate: '하루 {n}회',
       mapNote: '지도 데이터: © OpenStreetMap contributors',
-      attribution: '버스 데이터: 도쿄도 교통국(공공교통 오픈데이터 협의회 경유) / CC BY 4.0',
-      platformNoteHeadsign: '※ 같은 승차장이라도 목적지가 다른 버스가 있을 수 있습니다. 노선 번호만이 아니라 행선지 표시를 꼭 확인하세요.'
+      attribution: '버스 데이터: 도쿄도 교통국(공공교통 오픈데이터 협의회 경유) / CC BY 4.0 / 장소 검색: © OpenStreetMap Nominatim',
+      platformNoteHeadsign: '※ 같은 승차장이라도 목적지가 다른 버스가 있을 수 있습니다. 노선 번호만이 아니라 행선지 표시를 꼭 확인하세요.',
+      originCurrentTemplate: '출발지: {name}',
+      changeOriginBtn: '변경',
+      originModalTitle: '출발지 선택',
+      originTabGps: '현재 위치',
+      originTabMap: '지도에서 선택',
+      originTabText: '텍스트 검색',
+      originGpsBtn: '📍 현재 위치 사용',
+      originMapHint: '버튼을 누른 뒤 지도를 탭하여 출발지를 선택하세요.',
+      originMapToggleBtn: '지도에서 탭하여 선택',
+      originMapToggleBtnActive: '탭 선택 모드… (지도를 탭하세요)',
+      originSearchPlaceholder: '역 이름이나 지명을 입력 (예: 고탄다역)',
+      originSearchNoResults: '일치하는 장소를 찾을 수 없습니다',
+      originSearchError: '검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+      originFoundNearTemplate: '선택한 지점은 "{name}" 지원 지역 내에 있습니다.',
+      originOutOfAreaTemplate: '해당 지역의 버스 승차장 데이터가 아직 없습니다. 현재는 "{name}"만 지원합니다.',
+      originCloseBtn: '닫기',
+      selectedPointLabel: '선택한 지점',
+      yourLocationLabel: '현재 위치'
     }
   };
 
@@ -170,7 +237,9 @@
     currentOrigin: 'shinagawa',
     currentDest: null,
     search: '',
-    favorites: []
+    favorites: [],
+    selectedPoint: null,   // {lat, lon, label} — from GPS / map tap / text search
+    pinDropMode: false
   };
 
   try {
@@ -204,6 +273,12 @@
   }
 
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  function originName(originId) {
+    var origin = DATA.origins[originId];
+    if (!origin) return originId;
+    return origin.name[state.lang] || origin.name.ja;
+  }
 
   function getServicePattern(date) {
     var day = date.getDay(); // 0=Sun .. 6=Sat
@@ -250,11 +325,119 @@
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
+  function nearestOrigin(lat, lon) {
+    var best = null;
+    Object.keys(DATA.origins).forEach(function (id) {
+      var o = DATA.origins[id];
+      var km = haversineKm(lat, lon, o.lat, o.lon);
+      if (!best || km < best.distanceKm) best = { id: id, distanceKm: km };
+    });
+    return best;
+  }
+
   // ---------------------------------------------------------------------
-  // map (Leaflet)
+  // origin ("start point") selection
+  // ---------------------------------------------------------------------
+  var ORIGIN_MATCH_RADIUS_KM = 1;
+
+  function selectStartPoint(lat, lon, label) {
+    state.selectedPoint = { lat: lat, lon: lon, label: label || t('selectedPointLabel') };
+    var nearest = nearestOrigin(lat, lon);
+    if (nearest && nearest.distanceKm <= ORIGIN_MATCH_RADIUS_KM) {
+      state.currentOrigin = nearest.id;
+      showToast(tmpl(t('originFoundNearTemplate'), { name: originName(nearest.id) }));
+    } else {
+      showToast(tmpl(t('originOutOfAreaTemplate'), { name: originName(state.currentOrigin) }));
+    }
+    closeOriginModal();
+    if (state.view === 'detail') { state.view = 'home'; }
+    render();
+  }
+
+  function handleGpsClick() {
+    if (!navigator.geolocation) { showToast(t('gpsUnsupported')); return; }
+    showToast(t('gpsLocating'));
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      selectStartPoint(pos.coords.latitude, pos.coords.longitude, t('yourLocationLabel'));
+    }, function () {
+      showToast(t('gpsDenied'));
+    }, { timeout: 8000 });
+  }
+
+  function openOriginModal() {
+    $('#origin-modal').hidden = false;
+    setOriginTab('gps');
+  }
+  function closeOriginModal() {
+    $('#origin-modal').hidden = true;
+  }
+  function setOriginTab(name) {
+    ['gps', 'map', 'text'].forEach(function (tab) {
+      $('#origin-tab-' + tab).hidden = (tab !== name);
+    });
+    document.querySelectorAll('#origin-tabs .tt-tab').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-origin-tab') === name);
+    });
+  }
+
+  function armPinDropMode() {
+    state.pinDropMode = true;
+    closeOriginModal();
+    updatePinDropHint();
+  }
+
+  function updatePinDropHint() {
+    var bar = $('#origin-current-label');
+    if (state.pinDropMode) {
+      bar.textContent = t('originMapToggleBtnActive');
+    } else {
+      renderOriginBar();
+    }
+  }
+
+  var searchDebounce = null;
+  function runOriginSearch(query) {
+    var results = $('#origin-search-results');
+    if (!query || query.trim().length < 2) { results.innerHTML = ''; return; }
+    results.innerHTML = '<p class="empty-note">' + t('gpsLocating') + '</p>';
+    var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=jp&accept-language=' +
+      encodeURIComponent(state.lang) + '&q=' + encodeURIComponent(query);
+    fetch(url, { headers: { 'Accept': 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (list) {
+        results.innerHTML = '';
+        if (!list || list.length === 0) {
+          results.innerHTML = '<p class="empty-note">' + t('originSearchNoResults') + '</p>';
+          return;
+        }
+        list.forEach(function (item) {
+          var row = document.createElement('button');
+          row.className = 'origin-result';
+          row.textContent = item.display_name;
+          row.addEventListener('click', function () {
+            selectStartPoint(parseFloat(item.lat), parseFloat(item.lon), item.display_name);
+          });
+          results.appendChild(row);
+        });
+      })
+      .catch(function () {
+        results.innerHTML = '<p class="empty-note">' + t('originSearchError') + '</p>';
+      });
+  }
+
+  // ---------------------------------------------------------------------
+  // map (Leaflet) — a single persistent instance shared by home + detail views
   // ---------------------------------------------------------------------
   var map = null;
   var mapLayers = [];
+  var userIcon = L_divIconSafe('user-pin', '●');
+
+  function L_divIconSafe(cls, html) {
+    // deferred until Leaflet is loaded (called after DOMContentLoaded)
+    return function () {
+      return L.divIcon({ className: cls, html: html, iconSize: [18, 18], iconAnchor: [9, 9] });
+    };
+  }
 
   function initMap() {
     map = L.map('map', { zoomControl: true, attributionControl: true }).setView([35.6285, 139.7375], 15);
@@ -262,6 +445,17 @@
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
+
+    map.on('click', function (e) {
+      if (!state.pinDropMode) return;
+      state.pinDropMode = false;
+      selectStartPoint(e.latlng.lat, e.latlng.lng, t('selectedPointLabel'));
+    });
+
+    // Guard against any layout shift right after first paint (e.g. web fonts loading
+    // and changing the header height) throwing off Leaflet's cached container size.
+    setTimeout(function () { map.invalidateSize(); }, 250);
+    window.addEventListener('resize', function () { map.invalidateSize(); });
   }
 
   function clearMapLayers() {
@@ -276,7 +470,7 @@
     var dest = DATA.destinations[destId];
 
     var originMarker = L.marker([origin.lat, origin.lon]).addTo(map)
-      .bindPopup(origin.name[state.lang] || origin.name.ja);
+      .bindPopup(originName(state.currentOrigin));
     mapLayers.push(originMarker);
 
     var platformIcon = L.divIcon({
@@ -286,7 +480,7 @@
       iconAnchor: [15, 15]
     });
     var platformMarker = L.marker(dest.platformLatLon, { icon: platformIcon }).addTo(map)
-      .bindPopup(tmpl(t('platformLabel') + ' {n}', { n: dest.platform }));
+      .bindPopup(t('platformLabel') + ' ' + dest.platform);
     mapLayers.push(platformMarker);
 
     var destMarker = L.marker(dest.destLatLon).addTo(map)
@@ -296,11 +490,12 @@
     var bounds = [[origin.lat, origin.lon], dest.platformLatLon, dest.destLatLon];
 
     if (dest.shape && dest.shape.length) {
-      var line = L.polyline(dest.shape, { color: '#e6522c', weight: 4, opacity: 0.85 }).addTo(map);
+      var line = L.polyline(dest.shape, { color: '#e6522c', weight: 5, opacity: 0.9 }).addTo(map);
       mapLayers.push(line);
-      bounds = dest.shape;
+      bounds = dest.shape.concat([dest.destLatLon]);
     }
 
+    map.invalidateSize();
     map.fitBounds(bounds, { padding: [36, 36] });
   }
 
@@ -308,9 +503,25 @@
     if (!map) return;
     clearMapLayers();
     var origin = DATA.origins[state.currentOrigin];
-    var m = L.marker([origin.lat, origin.lon]).addTo(map).bindPopup(origin.name[state.lang] || origin.name.ja);
-    mapLayers.push(m);
-    map.setView([origin.lat, origin.lon], 15);
+    var originMarker = L.marker([origin.lat, origin.lon]).addTo(map).bindPopup(originName(state.currentOrigin));
+    mapLayers.push(originMarker);
+
+    var bounds = [[origin.lat, origin.lon]];
+
+    if (state.selectedPoint) {
+      var sel = state.selectedPoint;
+      var selMarker = L.marker([sel.lat, sel.lon], { icon: userIcon() }).addTo(map)
+        .bindPopup(sel.label);
+      mapLayers.push(selMarker);
+      bounds.push([sel.lat, sel.lon]);
+    }
+
+    map.invalidateSize();
+    if (bounds.length > 1) {
+      map.fitBounds(bounds, { padding: [48, 48], maxZoom: 16 });
+    } else {
+      map.setView([origin.lat, origin.lon], 15);
+    }
   }
 
   // ---------------------------------------------------------------------
@@ -321,6 +532,7 @@
   function render() {
     document.documentElement.lang = state.lang;
     renderChrome();
+    renderOriginBar();
     if (state.view === 'home') renderHome();
     else renderDetail(state.currentDest);
   }
@@ -331,9 +543,25 @@
     $('#search-input').placeholder = t('searchPlaceholder');
     $('#gps-label').textContent = t('gpsBtn');
     $('#attribution').textContent = t('attribution');
+    $('#map-note').textContent = t('mapNote');
+    $('#change-origin-btn').textContent = t('changeOriginBtn');
+    $('#origin-modal-title').textContent = t('originModalTitle');
+    $('#origin-close-btn').textContent = t('originCloseBtn');
+    $('#origin-gps-btn').textContent = t('originGpsBtn');
+    $('#origin-map-hint').textContent = t('originMapHint');
+    $('#origin-map-toggle-btn').textContent = state.pinDropMode ? t('originMapToggleBtnActive') : t('originMapToggleBtn');
+    $('#origin-search-input').placeholder = t('originSearchPlaceholder');
+    document.querySelector('[data-origin-tab="gps"]').textContent = t('originTabGps');
+    document.querySelector('[data-origin-tab="map"]').textContent = t('originTabMap');
+    document.querySelector('[data-origin-tab="text"]').textContent = t('originTabText');
     document.querySelectorAll('.lang-btn').forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-lang') === state.lang);
     });
+  }
+
+  function renderOriginBar() {
+    if (state.pinDropMode) return; // updatePinDropHint owns the label while armed
+    $('#origin-current-label').textContent = tmpl(t('originCurrentTemplate'), { name: originName(state.currentOrigin) });
   }
 
   function destList(originId) {
@@ -344,7 +572,7 @@
   function renderHome() {
     $('#home-view').hidden = false;
     $('#detail-view').hidden = true;
-    $('#all-dest-title').textContent = t('allDestTitle');
+    $('#all-dest-title').textContent = tmpl(t('allDestTitleTemplate'), { origin: originName(state.currentOrigin) });
 
     // favorites
     var favWrap = $('#fav-section');
@@ -440,7 +668,10 @@
     $('#home-view').hidden = true;
     $('#detail-view').hidden = false;
 
-    $('#detail-nav').textContent = tmpl(t('navTemplate'), { dest: d.name[state.lang] || d.name.ja });
+    $('#detail-nav').textContent = tmpl(t('navTemplate'), {
+      origin: originName(state.currentOrigin),
+      dest: d.name[state.lang] || d.name.ja
+    });
     $('#detail-route-badge').textContent = t('routeLabel') + ' ' + d.route;
     $('#detail-platform-badge').textContent = t('platformLabel') + ' ' + d.platform;
     $('#detail-travel').textContent = tmpl(t('travelMinTemplate'), { min: d.travelMin });
@@ -549,32 +780,15 @@
   function closeTimetable() { $('#tt-modal').hidden = true; }
 
   // ---------------------------------------------------------------------
-  // GPS
+  // toast
   // ---------------------------------------------------------------------
-  function handleGpsClick() {
-    var toast = $('#gps-toast');
-    if (!navigator.geolocation) {
-      showToast(t('gpsUnsupported'));
-      return;
-    }
-    showToast(t('gpsLocating'));
-    navigator.geolocation.getCurrentPosition(function (pos) {
-      var origin = DATA.origins[state.currentOrigin];
-      var km = haversineKm(pos.coords.latitude, pos.coords.longitude, origin.lat, origin.lon);
-      if (km <= 1) showToast(t('gpsFoundNear'));
-      else showToast(t('gpsFoundFar'));
-    }, function () {
-      showToast(t('gpsDenied'));
-    }, { timeout: 8000 });
-  }
-
   var toastTimer = null;
   function showToast(msg) {
     var toast = $('#gps-toast');
     toast.textContent = msg;
     toast.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toast.hidden = true; }, 4000);
+    toastTimer = setTimeout(function () { toast.hidden = true; }, 4500);
   }
 
   // ---------------------------------------------------------------------
@@ -621,6 +835,31 @@
       ttActivePattern = parseInt(btn.getAttribute('data-pattern'), 10);
       renderTimetableTabs();
       renderTimetableBody(state.currentDest);
+    });
+
+    // origin picker
+    $('#change-origin-btn').addEventListener('click', openOriginModal);
+    $('#origin-close-btn').addEventListener('click', closeOriginModal);
+    $('#origin-modal').addEventListener('click', function (e) {
+      if (e.target.id === 'origin-modal') closeOriginModal();
+    });
+    $('#origin-tabs').addEventListener('click', function (e) {
+      var btn = e.target.closest('.tt-tab');
+      if (!btn) return;
+      setOriginTab(btn.getAttribute('data-origin-tab'));
+    });
+    $('#origin-gps-btn').addEventListener('click', handleGpsClick);
+    $('#origin-map-toggle-btn').addEventListener('click', armPinDropMode);
+    $('#origin-search-btn').addEventListener('click', function () {
+      runOriginSearch($('#origin-search-input').value);
+    });
+    $('#origin-search-input').addEventListener('input', function (e) {
+      clearTimeout(searchDebounce);
+      var q = e.target.value;
+      searchDebounce = setTimeout(function () { runOriginSearch(q); }, 500);
+    });
+    $('#origin-search-input').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { clearTimeout(searchDebounce); runOriginSearch(e.target.value); }
     });
 
     // event delegation for favorite stars in lists

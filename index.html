@@ -31,6 +31,15 @@
     </div>
   </header>
 
+  <!-- MAP: always visible (both home and detail views draw into this one persistent map) -->
+  <div id="map"></div>
+  <p class="map-note" id="map-note">地図データ: © OpenStreetMap contributors</p>
+
+  <div class="origin-bar">
+    <span id="origin-current-label"></span>
+    <button class="change-origin-btn" id="change-origin-btn">変更</button>
+  </div>
+
   <main class="app-body">
 
     <!-- HOME VIEW -->
@@ -58,9 +67,6 @@
       <div id="next-departures"></div>
 
       <button class="view-tt-btn" id="view-timetable-btn">時刻表をすべて見る</button>
-
-      <div id="map"></div>
-      <p class="map-note">地図データ: © OpenStreetMap contributors</p>
     </section>
 
   </main>
@@ -77,6 +83,38 @@
       <div class="tt-tabs" id="tt-tabs"></div>
       <div id="tt-count"></div>
       <div id="tt-body"></div>
+    </div>
+  </div>
+
+  <!-- ORIGIN (START POINT) MODAL -->
+  <div id="origin-modal" hidden>
+    <div class="tt-sheet origin-sheet">
+      <div class="tt-sheet-header">
+        <h3 id="origin-modal-title"></h3>
+        <button class="tt-close-btn" id="origin-close-btn"></button>
+      </div>
+      <div class="tt-tabs" id="origin-tabs">
+        <button class="tt-tab" data-origin-tab="gps"></button>
+        <button class="tt-tab" data-origin-tab="map"></button>
+        <button class="tt-tab" data-origin-tab="text"></button>
+      </div>
+
+      <div class="origin-tab-panel" id="origin-tab-gps">
+        <button class="view-tt-btn" id="origin-gps-btn"></button>
+      </div>
+
+      <div class="origin-tab-panel" id="origin-tab-map" hidden>
+        <p class="origin-hint" id="origin-map-hint"></p>
+        <button class="view-tt-btn" id="origin-map-toggle-btn"></button>
+      </div>
+
+      <div class="origin-tab-panel" id="origin-tab-text" hidden>
+        <div class="origin-search-row">
+          <input type="text" id="origin-search-input">
+          <button class="gps-btn" id="origin-search-btn">🔍</button>
+        </div>
+        <div id="origin-search-results"></div>
+      </div>
     </div>
   </div>
 
