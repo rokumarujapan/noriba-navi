@@ -94,30 +94,44 @@ html, body {
 .route-bar {
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .route-row {
+  box-sizing: border-box;
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 10px;
-  padding: 9px 12px;
+  padding: 10px 12px;
+  margin: 0;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--bg);
   text-align: left;
   font: inherit;
+  line-height: normal;
   color: inherit;
   width: 100%;
+  max-width: 100%;
+  min-height: 40px;
 }
 
-button.route-row { cursor: pointer; }
+/* Buttons pick up native OS chrome (macOS/Windows especially) unless explicitly
+   stripped — without this the 出発 row can render taller/differently-bordered than
+   the 到着 row right below it, breaking the "two stacked rows" look on desktop. */
+button.route-row {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
 
 .route-arrow-down {
   align-self: center;
   font-size: 11px;
   color: var(--ink-soft);
   line-height: 1;
-  margin: 2px 0;
+  margin: 3px 0;
 }
 
 .route-tag {
@@ -335,12 +349,18 @@ button.route-row { cursor: pointer; }
   margin: 0 0 6px;
 }
 
-#detail-headsign-note {
+#detail-headsign-note,
+.warning-note {
   background: #fff8e8;
   border: 1px solid #f0dfa8;
   border-radius: 8px;
   padding: 8px 10px;
   color: #7a5b00;
+}
+
+.warning-note {
+  font-size: 12px;
+  margin: 0 16px 12px;
 }
 
 .fav-btn {

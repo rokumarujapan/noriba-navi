@@ -239,7 +239,8 @@
     currentDest: null,
     search: '',
     favorites: [],
-    selectedPoint: null   // {lat, lon, label} — from GPS / map tap / text search
+    selectedPoint: null,  // {lat, lon, label} — from GPS / map tap / text search
+    originDisplayLabel: null // shown in the route bar when it differs from the active data origin (out-of-area pick)
   };
 
   try {
@@ -341,17 +342,28 @@
   var ORIGIN_MATCH_RADIUS_KM = 1;
 
   function selectStartPoint(lat, lon, label) {
-    state.selectedPoint = { lat: lat, lon: lon, label: label || t('selectedPointLabel') };
+    var pointLabel = label || t('selectedPointLabel');
+    state.selectedPoint = { lat: lat, lon: lon, label: pointLabel };
     var nearest = nearestOrigin(lat, lon);
     if (nearest && nearest.distanceKm <= ORIGIN_MATCH_RADIUS_KM) {
       state.currentOrigin = nearest.id;
+      state.originDisplayLabel = null; // show the matched origin's own name, not the raw tap/search label
       showToast(tmpl(t('originFoundNearTemplate'), { name: originName(nearest.id) }));
     } else {
+      // No data for this point yet: keep showing whatever origin's data we do have
+      // (state.currentOrigin is left unchanged), but reflect what the user actually
+      // picked in the route bar — silently snapping the label back to "品川駅高輪口"
+      // when they clearly chose somewhere else just reads as "nothing happened".
+      state.originDisplayLabel = pointLabel;
       showToast(tmpl(t('originOutOfAreaTemplate'), { name: originName(state.currentOrigin) }));
     }
     closeOriginModal();
     if (state.view === 'detail') { state.view = 'home'; }
     render();
+  }
+
+  function currentOriginLabel() {
+    return state.originDisplayLabel || originName(state.currentOrigin);
   }
 
   function handleGpsClick() {
@@ -512,7 +524,7 @@
     $('#map-note').textContent = t('mapNote');
     $('#route-from-label').textContent = t('routeFromLabel');
     $('#route-to-label').textContent = t('routeToLabel');
-    $('#origin-current-label').textContent = originName(state.currentOrigin);
+    $('#origin-current-label').textContent = currentOriginLabel();
     $('#origin-modal-title').textContent = t('originModalTitle');
     $('#origin-close-btn').textContent = t('originCloseBtn');
     $('#origin-gps-btn').textContent = t('originGpsBtn');
@@ -535,6 +547,14 @@
     $('#home-view').hidden = false;
     $('#detail-view').hidden = true;
     $('#all-dest-title').textContent = tmpl(t('allDestTitleTemplate'), { origin: originName(state.currentOrigin) });
+
+    var mismatchNote = $('#origin-mismatch-note');
+    if (state.originDisplayLabel) {
+      mismatchNote.hidden = false;
+      mismatchNote.textContent = tmpl(t('originOutOfAreaTemplate'), { name: originName(state.currentOrigin) });
+    } else {
+      mismatchNote.hidden = true;
+    }
 
     // favorites
     var favWrap = $('#fav-section');
