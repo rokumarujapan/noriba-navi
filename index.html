@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>のりばナビ | Noriba Navi</title>
+<meta name="description" content="バスの「のりば番号」がひと目でわかる案内アプリ。東京都交通局の公式GTFSデータを使用。">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <div>
+        <h1 id="app-title">のりばナビ</h1>
+        <p id="app-tagline">バスの「のりば番号」がひと目でわかる</p>
+      </div>
+      <div class="lang-switch">
+        <button class="lang-btn" data-lang="ja">JA</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="zh">中文</button>
+        <button class="lang-btn" data-lang="ko">한국어</button>
+      </div>
+    </div>
+    <div class="search-row">
+      <input type="text" id="search-input" placeholder="行き先を検索">
+      <button class="gps-btn" id="gps-btn"><span aria-hidden="true">📍</span><span id="gps-label">現在地</span></button>
+    </div>
+  </header>
+
+  <main class="app-body">
+
+    <!-- HOME VIEW -->
+    <section id="home-view">
+      <div id="fav-section"></div>
+      <h2 class="section-title" id="all-dest-title">品川駅高輪口 発</h2>
+      <div id="dest-list"></div>
+    </section>
+
+    <!-- DETAIL VIEW -->
+    <section id="detail-view" hidden>
+      <div class="detail-header">
+        <button class="back-btn" id="back-btn">← 戻る</button>
+        <h2 id="detail-nav"></h2>
+        <div class="detail-badges">
+          <span class="badge badge-route" id="detail-route-badge"></span>
+          <span class="badge badge-platform" id="detail-platform-badge"></span>
+          <span id="detail-travel"></span>
+        </div>
+        <p id="detail-via" hidden></p>
+        <p id="detail-headsign-note"></p>
+        <button class="fav-btn" id="detail-fav-btn"></button>
+      </div>
+
+      <div id="next-departures"></div>
+
+      <button class="view-tt-btn" id="view-timetable-btn">時刻表をすべて見る</button>
+
+      <div id="map"></div>
+      <p class="map-note">地図データ: © OpenStreetMap contributors</p>
+    </section>
+
+  </main>
+
+  <footer class="app-footer" id="attribution"></footer>
+
+  <!-- TIMETABLE MODAL -->
+  <div id="tt-modal" hidden>
+    <div class="tt-sheet">
+      <div class="tt-sheet-header">
+        <h3 id="tt-title"></h3>
+        <button class="tt-close-btn" id="tt-close-btn">閉じる</button>
+      </div>
+      <div class="tt-tabs" id="tt-tabs"></div>
+      <div id="tt-count"></div>
+      <div id="tt-body"></div>
+    </div>
+  </div>
+
+  <div id="gps-toast" hidden></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
