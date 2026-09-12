@@ -19,6 +19,13 @@
 
 * { box-sizing: border-box; }
 
+/* The browser's built-in rule for the `hidden` attribute ([hidden]{display:none})
+   has low specificity, so any element-specific rule that sets its own `display`
+   (e.g. #detail-view{display:flex} below, needed for its layout once shown) silently
+   wins and the "hidden" element stays visible. This one rule guarantees `hidden`
+   always wins regardless of what else targets that element. */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   padding: 0;
