@@ -90,9 +90,99 @@ html, body {
   border-color: var(--ink);
 }
 
-.search-row {
+/* ---------- route bar: 出発 / 到着 の縦積み(乗換案内アプリ式) ---------- */
+.route-bar {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+}
+
+.route-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  width: 100%;
+}
+
+button.route-row { cursor: pointer; }
+
+.route-arrow-down {
+  align-self: center;
+  font-size: 11px;
+  color: var(--ink-soft);
+  line-height: 1;
+  margin: 2px 0;
+}
+
+.route-tag {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #fff;
+}
+
+.route-tag-from { background: var(--brand); }
+.route-tag-to { background: var(--ink); }
+
+.route-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.route-row-to input {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+}
+
+.route-row-to input:focus { outline: none; }
+
+/* result screen: 発/着 summary using the same pill tags as the route bar */
+.result-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 2px 0 10px;
+}
+
+.result-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.gps-quick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
 }
 
 #search-input {
@@ -341,35 +431,7 @@ html, body {
   font-size: 0;
 }
 
-/* ---------- origin (start point) bar + modal ---------- */
-.origin-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 8px 16px 0;
-  padding: 8px 12px;
-  background: var(--card-bg);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  font-size: 12px;
-  color: var(--ink-soft);
-}
-
-#origin-current-label { font-weight: 700; color: var(--ink); }
-
-.change-origin-btn {
-  border: 1px solid var(--brand);
-  background: #fff;
-  color: var(--brand-dark);
-  border-radius: 999px;
-  padding: 5px 12px;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
+/* ---------- origin (start point) modal ---------- */
 .origin-sheet { max-height: 78vh; }
 
 .origin-tab-panel { padding: 14px 16px 18px; }
@@ -378,7 +440,14 @@ html, body {
 .origin-hint {
   font-size: 12px;
   color: var(--ink-soft);
-  margin: 0 0 12px;
+  margin: 0 0 8px;
+}
+
+#origin-map {
+  height: 220px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  overflow: hidden;
 }
 
 .origin-search-row {

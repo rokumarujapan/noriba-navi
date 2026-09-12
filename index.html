@@ -25,20 +25,20 @@
         <button class="lang-btn" data-lang="ko">한국어</button>
       </div>
     </div>
-    <div class="search-row">
-      <input type="text" id="search-input" placeholder="行き先を検索">
-      <button class="gps-btn" id="gps-btn"><span aria-hidden="true">📍</span><span id="gps-label">現在地</span></button>
+    <!-- ROUTE BAR: 出発/到着 の縦積み(乗換案内アプリ式)。出発をタップすると出発地選択モーダルが開く -->
+    <div class="route-bar">
+      <button class="route-row route-row-from" id="change-origin-btn">
+        <span class="route-tag route-tag-from" id="route-from-label">出発</span>
+        <span class="route-value" id="origin-current-label"></span>
+      </button>
+      <div class="route-arrow-down" aria-hidden="true">↓</div>
+      <div class="route-row route-row-to">
+        <span class="route-tag route-tag-to" id="route-to-label">到着</span>
+        <input type="text" id="search-input" placeholder="行き先を入力・選択">
+      </div>
     </div>
+    <button class="gps-quick-btn" id="gps-btn"><span aria-hidden="true">📍</span><span id="gps-label">現在地</span></button>
   </header>
-
-  <!-- MAP: always visible (both home and detail views draw into this one persistent map) -->
-  <div id="map"></div>
-  <p class="map-note" id="map-note">地図データ: © OpenStreetMap contributors</p>
-
-  <div class="origin-bar">
-    <span id="origin-current-label"></span>
-    <button class="change-origin-btn" id="change-origin-btn">変更</button>
-  </div>
 
   <main class="app-body">
 
@@ -53,7 +53,10 @@
     <section id="detail-view" hidden>
       <div class="detail-header">
         <button class="back-btn" id="back-btn">← 戻る</button>
-        <h2 id="detail-nav"></h2>
+        <div class="result-summary">
+          <div class="result-line"><span class="route-tag route-tag-from">発</span><span id="detail-origin-name"></span></div>
+          <div class="result-line"><span class="route-tag route-tag-to">着</span><span id="detail-dest-name"></span></div>
+        </div>
         <div class="detail-badges">
           <span class="badge badge-route" id="detail-route-badge"></span>
           <span class="badge badge-platform" id="detail-platform-badge"></span>
@@ -67,6 +70,10 @@
       <div id="next-departures"></div>
 
       <button class="view-tt-btn" id="view-timetable-btn">時刻表をすべて見る</button>
+
+      <!-- MAP: shown here, below the departure times, only once a destination is searched -->
+      <div id="map"></div>
+      <p class="map-note" id="map-note">地図データ: © OpenStreetMap contributors</p>
     </section>
 
   </main>
@@ -105,7 +112,7 @@
 
       <div class="origin-tab-panel" id="origin-tab-map" hidden>
         <p class="origin-hint" id="origin-map-hint"></p>
-        <button class="view-tt-btn" id="origin-map-toggle-btn"></button>
+        <div id="origin-map"></div>
       </div>
 
       <div class="origin-tab-panel" id="origin-tab-text" hidden>
